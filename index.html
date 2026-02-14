@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>nooooooooooor</title>
+    <style>
+        :root {
+            --wall-color: #1e272e;
+            --desk-color: #4b3621;
+            --lamp-on: #fffce0;
+            --lamp-off: #3d3d3d;
+            --frame-gold: #d4af37;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #000;
+            direction: rtl;
+        }
+
+        #fireworksCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        #roomScreen {
+            position: relative;
+            width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, var(--wall-color) 0%, #0a0a0a 100%);
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            transition: opacity 1s ease;
+        }
+
+        /* حاوية البراويز - بقت متجاوبة */
+        .frames-container { 
+            position: absolute; top: 5%; width: 90%; 
+            display: flex; justify-content: center; gap: 15px; z-index: 5; 
+        }
+        .frame { 
+            width: 25%; max-width: 110px; height: auto; aspect-ratio: 2/3;
+            background: #fff; border: 4px solid var(--frame-gold); 
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.6); overflow: hidden; text-align: center; 
+        }
+        .frame img { width: 100%; height: 70%; object-fit: cover; }
+        .frame-label { font-size: 12px; font-weight: bold; padding: 5px; color: #333; }
+        
+        /* مربع الأسئلة - حجمه بيتغير حسب الشاشة */
+        .question-slider {
+            position: absolute; top: 25%; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 500px; 
+            background: rgba(255, 255, 255, 0.98); border-radius: 20px; padding: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7); z-index: 100; text-align: center;
+            display: none; border: 5px solid #ff9f43;
+            box-sizing: border-box;
+        }
+
+        .option-btn {
+            background: #f1f2f6; border: 2px solid #dfe6e9; padding: 10px;
+            border-radius: 10px; cursor: pointer; font-size: 16px; transition: 0.3s; margin: 5px 0; width: 100%;
+        }
+        .option-btn:hover { background: #ffeaa7; border-color: #ff9f43; }
+
+        /* الأباجورة والمكتب */
+        .lamp-and-desk {
+            width: 100%; display: flex; flex-direction: column; align-items: center;
+            margin-bottom: 10%;
+        }
+        .lamp { display: flex; flex-direction: column; align-items: center; z-index: 20; position: relative; }
+        .shade { 
+            width: 150px; height: 90px; background: var(--lamp-off); 
+            border-radius: 80px 80px 15px 15px; cursor: pointer; transition: 0.3s;
+        }
+        .desk { 
+            width: 90%; max-width: 800px; height: 20px; 
+            background: var(--desk-color); border-radius: 10px;
+        }
+        
+        .is-on #roomScreen { background: radial-gradient(circle at center, #2c3e50 0%, #0a0a0a 100%); }
+        .is-on .shade { background: var(--lamp-on); box-shadow: 0 0 80px var(--lamp-on); }
+        .is-on .question-slider { display: block; }
+
+        /* شاشة الاحتفال - بقت صفوف في الموبايل وأعمدة في الكمبيوتر */
+        #celebrationScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: none; grid-template-columns: 1fr 1fr;
+            z-index: 1000; animation: fadeIn 1.5s forwards;
+        }
+
+        @media (max-width: 600px) {
+            #celebrationScreen { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+            .ramadan-side h1, .valentine-side h1 { font-size: 35px; }
+            .shade { width: 120px; height: 70px; }
+            .frame-label { font-size: 10px; }
+        }
+
+        .ramadan-side { background: linear-gradient(135deg, #1e3799, #0c2461); display: flex; flex-direction: column; justify-content: center; align-items: center; color: #feca57; text-align: center; position: relative; overflow: hidden; border-left: 2px solid #f1c40f; padding: 20px; }
+        .ramadan-side h1 { text-shadow: 0 0 20px #f1c40f; animation: glow 2s infinite alternate; margin: 10px 0; }
+        
+        .valentine-side { background: linear-gradient(135deg, #ff4d4d, #b33939); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; position: relative; overflow: hidden; padding: 20px; }
+        .valentine-side h1 { text-shadow: 0 0 20px #fff; animation: beat 0.8s infinite; margin: 10px 0; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes glow { from { opacity: 0.7; transform: scale(1); } to { opacity: 1; transform: scale(1.05); } }
+        @keyframes beat { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        .floating-item { position: absolute; pointer-events: none; animation: float 5s linear infinite; }
+        @keyframes float { 0% { transform: translateY(100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworksCanvas"></canvas>
+
+    <div id="roomScreen">
+        <div class="frames-container">
+            <div class="frame"><img src="images.jpeg"><div class="frame-label">بندق 🐾</div></div>
+            <div class="frame"><img src="download.jpeg"><div class="frame-label">لولي ✨</div></div>
+        </div>
+
+        <div class="question-slider" id="qSlider">
+            <div id="quizContent">
+                <div id="questionText" style="font-size: 18px; font-weight: bold; margin-bottom: 15px;"></div>
+                <div id="optionsContainer"></div>
+                <div style="margin-top: 15px; font-weight: bold; color: #ff9f43;" id="progress"></div>
+            </div>
+        </div>
+
+        <div class="lamp-and-desk">
+            <div class="lamp">
+                <div class="shade" id="lampShade"></div>
+                <div style="width: 8px; height: 40px; background: #444;"></div>
+            </div>
+            <div class="desk"></div>
+        </div>
+    </div>
+
+    <div id="celebrationScreen">
+        <div class="ramadan-side" id="ramadan">
+            <h1>Ramadan Kareem</h1>
+            <p>كل سنة وأنت طيب يا منياوي يا أصلي 🌙</p>
+        </div>
+        <div class="valentine-side" id="valentine">
+            <h1>Happy Valentine</h1>
+            <p>Happy Valentine day ya noooooooooooooooooor ❤️</p>
+        </div>
+    </div>
+
+    <script>
+        // --- نفس المنطق البرمجي بتاعك بدون تغيير لضمان الأداء ---
+        const questions = [
+            { q: "اكتر ايموجي بتسخدمه اي؟", options: ["🦥🦥🦥", "🤨🤨🤨", "🤥🤥🤥"], correct: 0 },
+            { q: "انتا منين؟", options: ["المنيا", "المنيا تاني", "المنيا تالت"], correct: -1, msg: "معايا دليل رسمي انك من المنيااااااااااا" },
+            { q: "من صاحب اغنية العب العب العب؟", options: ["ماريا", "اسلام كابنوجاا", "حسن شحاته"], correct: 0 },
+            { q: "اين يقع مثل برمودا؟", options: ["المملكة المتحدة", "المملكة اللى مش متحددة", "العباسية"], correct: 2 },
+            { q: "orange juice اسمه اي بالعربي؟", options: ["عصير برتقان", "عصير برتجاان", "عصير جوافه"], correct: 1 }
+        ];
+
+        let currentQ = 0;
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.onresize = resize;
+        resize();
+
+        class FireworkParticle {
+            constructor(x, y, color, angle, speed) {
+                this.x = x; this.y = y; this.color = color;
+                this.velocity = { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed };
+                this.gravity = 0.12; this.friction = 0.96; this.opacity = 1;
+                this.decay = Math.random() * 0.01 + 0.008;
+            }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.opacity;
+                ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.shadowBlur = 10; ctx.shadowColor = this.color;
+                ctx.fill(); ctx.restore();
+            }
+            update() {
+                this.velocity.x *= this.friction; this.velocity.y *= this.friction;
+                this.velocity.y += this.gravity; this.x += this.velocity.x; this.y += this.velocity.y;
+                this.opacity -= this.decay;
+            }
+        }
+
+        function explodeFirework(x, y) {
+            const count = 100;
+            const hue = Math.random() * 360;
+            const color = `hsl(${hue}, 100%, 60%)`;
+            for(let i=0; i<count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 2;
+                particles.push(new FireworkParticle(x, y, color, angle, speed));
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, i) => {
+                if(p.opacity > 0) { p.update(); p.draw(); }
+                else { particles.splice(i, 1); }
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        function createParticles(parent, symbols) {
+            setInterval(() => {
+                const p = document.createElement('div');
+                p.className = 'floating-item';
+                p.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                p.style.left = Math.random() * 90 + '%';
+                p.style.fontSize = Math.random() * 15 + 15 + 'px';
+                parent.appendChild(p);
+                setTimeout(() => p.remove(), 5000);
+            }, 400);
+        }
+
+        function startFinalCelebration() {
+            document.getElementById('roomScreen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('roomScreen').style.display = 'none';
+                document.getElementById('celebrationScreen').style.display = 'grid';
+                createParticles(document.getElementById('ramadan'), ['🌙', '⭐', '🏮']);
+                createParticles(document.getElementById('valentine'), ['❤️', '💖', '🌹']);
+                setInterval(() => explodeFirework(Math.random()*canvas.width, Math.random()*canvas.height/2), 1000);
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            if(currentQ >= questions.length) { startFinalCelebration(); return; }
+            const data = questions[currentQ];
+            document.getElementById('questionText').innerText = data.q;
+            document.getElementById('progress').innerText = `سؤال ${currentQ + 1} من 5`;
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if(data.correct === -1 || index === data.correct) {
+                        explodeFirework(window.innerWidth/2, window.innerHeight/3);
+                        if(data.msg) alert(data.msg);
+                        currentQ++; loadQuestion();
+                    } else { alert("ركز يا عمنا الإجابة غلط! 😂"); }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        document.getElementById('lampShade').onclick = () => document.body.classList.toggle('is-on');
+        loadQuestion();
+    </script>
+</body>
+</html>
